@@ -25,6 +25,20 @@ KEY_ENV = {
 }
 
 
+# Canonical id -> the host's actual model name (verified against Groq /models).
+HOST_MODEL = {
+    "groq": {
+        "llama-3.3-70b": "llama-3.3-70b-versatile",
+        "gpt-oss-120b": "openai/gpt-oss-120b",
+        "gpt-oss-20b": "openai/gpt-oss-20b",
+    },
+}
+
+
+def host_model_name(host: str, canonical_id: str) -> str:
+    return HOST_MODEL.get(host, {}).get(canonical_id, canonical_id)
+
+
 class Provider(Protocol):
     def chat(self, model: str, request: dict) -> dict:
         """Take an OpenAI-shaped request, return an OpenAI-shaped response."""
@@ -91,7 +105,8 @@ class OpenAICompatProvider:
         body = json.dumps({**request, "model": model}).encode()
         req = urlreq.Request(f"{self.base_url}/chat/completions", data=body,
                              headers={"Authorization": f"Bearer {key}",
-                                      "Content-Type": "application/json"})
+                                      "Content-Type": "application/json",
+                                      "User-Agent": "offramp/0.1 (+https://github.com/jhammant/offramp)"})
         with urlreq.urlopen(req) as resp:
             return json.loads(resp.read())
 

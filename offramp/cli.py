@@ -39,9 +39,21 @@ def cmd_analyze(args: argparse.Namespace) -> int:
 
 def cmd_replay(args: argparse.Namespace) -> int:
     prompts = load_prompts(args.prompts or PROMPTS)
-    res = replay(prompts, args.reference, args.candidate, threshold=args.threshold)
+    judge, host = None, None
+    if args.live:
+        os.environ["OFFRAMP_LIVE_ROUTING"] = "1"
+        host = args.host
+        if args.limit:
+            prompts = prompts[:args.limit]
+        from .replay import groq_judge, lexical_judge
+        judge = lexical_judge if args.lexical else groq_judge
+    kw = {"threshold": args.threshold, "host": host}
+    if judge is not None:
+        kw["judge"] = judge
+    res = replay(prompts, args.reference, args.candidate, **kw)
     live = os.environ.get("OFFRAMP_LIVE_ROUTING") == "1"
-    print(f"replay-eval  {res.reference} -> {res.candidate}   ({'LIVE' if live else 'MOCK'}, n={res.n})")
+    tag = f"LIVE on {host}, {'lexical' if args.lexical else 'LLM'}-judge" if live else "MOCK"
+    print(f"replay-eval  {res.reference} -> {res.candidate}   ({tag}, n={res.n})")
     print(f"  agreement={res.agreement}  pass_rate={res.pass_rate} (>= {res.threshold})")
     print(f"  projected saving: ${res.projected_saving_per_1m:.2f}/1M blended")
     print(f"  VERDICT: {res.verdict.upper()}")
@@ -100,10 +112,14 @@ def main(argv: list[str] | None = None) -> int:
     a.set_defaults(func=cmd_analyze)
 
     rp = sub.add_parser("replay", help="replay-eval a substitution on sample prompts")
-    rp.add_argument("reference", help="reference model id, e.g. claude-opus-4.6")
-    rp.add_argument("candidate", help="cheaper candidate id, e.g. deepseek-v3.1")
+    rp.add_argument("reference", help="reference model id, e.g. llama-3.3-70b")
+    rp.add_argument("candidate", help="cheaper candidate id, e.g. gpt-oss-120b")
     rp.add_argument("--prompts", help="prompts JSON (default: bundled sample)")
     rp.add_argument("--threshold", type=float, default=0.8, help="per-prompt pass bar (0..1)")
+    rp.add_argument("--live", action="store_true", help="call real models (needs host API key)")
+    rp.add_argument("--host", default="groq", help="host for --live (default groq)")
+    rp.add_argument("--limit", type=int, default=6, help="prompts to eval when --live")
+    rp.add_argument("--lexical", action="store_true", help="use lexical judge instead of LLM-judge")
     rp.set_defaults(func=cmd_replay)
 
     op = sub.add_parser("optimize", help="governed action plan (recommend + replay + policy)")
