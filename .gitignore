@@ -11,3 +11,4 @@ offramp-audit.jsonl
 .env.*
 *.key
 secrets*
+notes/

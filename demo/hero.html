@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --base:#181825; --mantle:#11111b; --surface:#1e1e2e;
+    --text:#cdd6f4; --sub:#a6adc8; --muted:#6c7086; --overlay:#313244;
+    --teal:#94e2d5; --green:#a6e3a1; --peach:#fab387; --red:#f38ba8; --blue:#89b4fa;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:630px}
+  body{
+    background:
+      radial-gradient(1200px 500px at 82% -10%, rgba(148,226,213,.10), transparent 60%),
+      radial-gradient(900px 500px at 0% 120%, rgba(137,180,250,.08), transparent 55%),
+      linear-gradient(160deg,#1a1a29 0%, var(--base) 55%, var(--mantle) 100%);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    padding:60px 64px;
+    position:relative; overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:"SF Mono",ui-monospace,Menlo,"JetBrains Mono",monospace}
+  /* header */
+  .brand{display:flex;align-items:baseline;gap:14px}
+  .chev{color:var(--teal);font-size:40px;font-weight:600}
+  .name{font-size:52px;font-weight:700;letter-spacing:-1px}
+  .name .dim{color:var(--muted)}
+  .tag{margin-top:16px;font-size:26px;line-height:1.35;color:var(--text);max-width:760px;font-weight:500}
+  .tag b{color:var(--teal);font-weight:600}
+  .sub{margin-top:10px;font-size:17px;color:var(--sub);letter-spacing:.2px}
+  .sub .k{color:var(--muted)}
+
+  /* the off-ramp diagram */
+  .stage{position:relative;margin-top:44px;height:250px}
+  .road{
+    position:absolute;left:0;top:26px;width:470px;height:64px;
+    background:linear-gradient(90deg,var(--overlay),#3a3a52);
+    border-radius:12px;display:flex;flex-direction:column;justify-content:center;
+    padding-left:24px;border:1px solid #45475a;
+  }
+  .road .big{font-size:24px;font-weight:700}
+  .road .clouds{font-size:14px;color:var(--sub);margin-top:2px;letter-spacing:.3px}
+  .lane{
+    position:absolute;left:560px;width:576px;border-radius:14px;padding:20px 24px;
+    border:1px solid; backdrop-filter:blur(2px);
+  }
+  .lane .h{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:700}
+  .lane .badge{font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.4px}
+  .lane .d{margin-top:8px;font-size:17px;color:var(--sub);line-height:1.4}
+  .lane .d b{font-weight:600}
+  .safe{top:0;background:rgba(166,227,161,.08);border-color:rgba(166,227,161,.45)}
+  .safe .h{color:var(--green)} .safe .badge{background:rgba(166,227,161,.16);color:var(--green)}
+  .safe .d b{color:var(--green)}
+  .adv{top:134px;background:rgba(250,179,135,.07);border-color:rgba(250,179,135,.42)}
+  .adv .h{color:var(--peach)} .adv .badge{background:rgba(250,179,135,.15);color:var(--peach)}
+  .adv .d b{color:var(--peach)}
+  /* connector */
+  .svg{position:absolute;left:455px;top:0;width:120px;height:250px}
+
+  /* footer pipeline */
+  .foot{position:absolute;left:64px;right:64px;bottom:46px;display:flex;align-items:center;justify-content:space-between}
+  .pipe{font-size:19px;color:var(--text);letter-spacing:.3px}
+  .pipe .arw{color:var(--muted);margin:0 10px}
+  .pipe .s1{color:var(--blue)} .pipe .s2{color:var(--peach)} .pipe .s3{color:var(--green)}
+  .ro{font-size:15px;color:var(--muted);border:1px solid var(--overlay);border-radius:999px;padding:6px 14px}
+  .ro b{color:var(--teal)}
+</style>
+</head>
+<body>
+  <div class="brand">
+    <span class="chev mono">❯</span>
+    <span class="name mono">offramp</span>
+  </div>
+  <div class="tag">Cut your cloud AI bill — <b>before you route a single call.</b></div>
+  <div class="sub">Read your real spend on <span class="k">AWS Bedrock · Google Vertex · Azure OpenAI</span>, then rank the savings by risk.</div>
+
+  <div class="stage">
+    <div class="road">
+      <div class="big mono">$8,476<span style="font-size:16px;color:var(--sub);font-weight:500"> /mo AI spend</span></div>
+      <div class="clouds">3 clouds · same truth on each</div>
+    </div>
+
+    <svg class="svg" viewBox="0 0 120 250" preserveAspectRatio="none">
+      <path d="M0,58 C60,58 60,32 120,32" fill="none" stroke="#a6e3a1" stroke-width="3" opacity="0.7"/>
+      <path d="M0,58 C60,58 60,166 120,166" fill="none" stroke="#fab387" stroke-width="3" opacity="0.7"/>
+    </svg>
+
+    <div class="lane safe">
+      <div class="h">SAFE lane <span class="badge">AUTO</span></div>
+      <div class="d">Same weights, <b>cheaper host</b> (Llama · Mistral · gpt-oss). Identical model — <b>no quality change</b>. Auto-applicable.</div>
+    </div>
+    <div class="lane adv">
+      <div class="h">ADVISORY lane <span class="badge">EVAL GATE</span></div>
+      <div class="d">Cheaper <b>different</b> model (Claude · GPT · Gemini). A quality bet — staged only after it <b>passes a replay-eval on your prompts</b>.</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="pipe mono"><span class="s1">analyze</span><span class="arw">→</span><span class="s2">replay-eval</span><span class="arw">→</span><span class="s3">govern</span></div>
+    <div class="ro">analysis is <b>100% read-only</b></div>
+  </div>
+</body>
+</html>

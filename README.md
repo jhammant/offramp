@@ -4,6 +4,10 @@
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](pyproject.toml)
 
+<p align="center">
+  <img src="demo/hero.png" alt="offramp — cut your cloud AI bill before you route a single call: a SAFE lane (same weights, cheaper host, auto) and an ADVISORY lane (cheaper model, gated behind a replay-eval)" width="840">
+</p>
+
 **Analyze your cloud AI spend — AWS Bedrock, Google Vertex, Azure OpenAI — and recommend cheaper providers, before you route a single call.**
 
 Every hyperscaler resells models at the vendor's list price. For **open-weight**
@@ -16,6 +20,14 @@ from the **advisory** (quality-bet) ones. Routing comes later, only for what you
 
 > Same truth on every cloud: open weights = a free lunch; frontier = a quality bet.
 > Analyze → replay-eval → govern. Analysis is 100% read-only.
+
+## Demo
+
+<p align="center">
+  <img src="demo/offramp.gif" alt="offramp demo: analyze across AWS/Google/Azure, then a real live replay-eval on Groq (LLM-as-judge), then a governed optimize plan" width="900">
+</p>
+
+One pass, three steps: `analyze` prices your usage across all three clouds → `replay-eval` proves a swap on your own prompts (**live on Groq, LLM-as-judge — not a mock**) → `optimize` produces a governed plan that **auto-applies the safe wins** and **stages the quality bets behind your sign-off**. The router never reroutes a call until you approve it.
 
 ## Install
 
