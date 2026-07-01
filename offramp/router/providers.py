@@ -88,7 +88,7 @@ class OpenAICompatProvider:
             raise SystemExit(f"{KEY_ENV[self.host]} not set — cannot call {self.host}")
         from urllib import request as urlreq
         import json
-        body = json.dumps({**request, "model": request.get("model")}).encode()
+        body = json.dumps({**request, "model": model}).encode()
         req = urlreq.Request(f"{self.base_url}/chat/completions", data=body,
                              headers={"Authorization": f"Bearer {key}",
                                       "Content-Type": "application/json"})
