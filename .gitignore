@@ -7,3 +7,7 @@ build/
 offramp-audit.jsonl
 *.jsonl
 .DS_Store
+.env
+.env.*
+*.key
+secrets*
