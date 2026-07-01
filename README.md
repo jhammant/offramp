@@ -16,10 +16,12 @@ host; for **proprietary** frontier models (Claude, Nova, **Gemini**, **GPT**) th
 is no cheaper twin — the only lever is substituting a cheaper model, a quality
 bet. `offramp` treats all three clouds evenhandedly: it reads your real usage,
 prices it, and ranks the savings, separating the **safe** (identical-weights) wins
-from the **advisory** (quality-bet) ones. Routing comes later, only for what you approve.
+from the **advisory** (quality-bet) ones — then it can **route** the safe, approved
+ones to the cheaper host for you, as a drop-in Bedrock client.
 
 > Same truth on every cloud: open weights = a free lunch; frontier = a quality bet.
-> Analyze → replay-eval → govern. Analysis is 100% read-only.
+> Analyze → replay-eval → govern → route. Analysis is 100% read-only; nothing
+> reroutes until you say so.
 
 ## Demo
 
@@ -54,6 +56,10 @@ offramp replay claude-opus-4.6 deepseek-v3.1           # offline mock by default
 offramp optimize --dry-run --audit offramp-audit.jsonl
 offramp optimize --live --auto-substitutions --deny claude   # e.g. never touch Claude
 
+# 4. ROUTE — the migration: serve an approved open-weight model from the cheaper host
+offramp route gpt-oss-120b "your prompt" --live        # same weights, ~50% cheaper, live
+#   proprietary models (Claude/GPT/Gemini) have no cheaper twin, so route declines them
+
 offramp prices                                         # the price catalog
 ```
 
@@ -71,6 +77,29 @@ counts + invocations per model). No inference, no writes, no cost.
 The `recommend → replay-eval → govern` engine is identical across all three — only
 the usage reader differs. AWS is wired live; Vertex/Azure readers need your creds
 + config (run `--dry-run --cloud gcp|azure` to exercise the engine meanwhile).
+
+## Routing (the migration)
+
+A recommendation is only useful if you can act on it. `offramp.client()` is a
+drop-in replacement for boto3's `bedrock-runtime` with three modes:
+
+| Mode | What it does |
+|---|---|
+| `observe` | pass every call through to Bedrock, record usage — zero behaviour change |
+| `shadow` | serve the real response, run the cheaper candidate alongside, log the delta |
+| `route` | serve approved **open-weight** models from the cheaper host — same weights, no quality change |
+
+```python
+import offramp
+client = offramp.client(mode="route")            # was: boto3.client("bedrock-runtime")
+client.converse(modelId="gpt-oss-120b", messages=[...])   # transparently served cheaper
+```
+
+Only same-weights arbitrage is ever auto-routed — **proprietary models
+(Claude/Nova/GPT/Gemini) always stay on Bedrock** (no cheaper twin), and substitutions
+stay behind `optimize` + your sign-off. Text happy-path for v1 (no tool-calling,
+streaming, or multimodal yet). The Converse ⇄ OpenAI translation and the host
+adapters are the same ones the live replay-eval uses.
 
 ## Sovereignty
 

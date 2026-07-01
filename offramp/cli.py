@@ -80,6 +80,44 @@ def cmd_optimize(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_route(args: argparse.Namespace) -> int:
+    import textwrap
+    import time
+
+    if args.live:
+        os.environ["OFFRAMP_LIVE_ROUTING"] = "1"
+    from .router.shim import Client
+
+    c = Client(mode="route", prefer_host=args.host)
+    target = c.route_target(args.model)
+    if target is None:
+        print(f"route  {args.model}: no cheaper twin — offramp serves this from Bedrock unchanged")
+        print("  (proprietary model, blocked by policy, or no cheaper host)")
+        return 0
+
+    tag = f"LIVE on {target.host}" if args.live else "MOCK"
+    messages = [{"role": "user", "content": [{"text": args.prompt}]}]
+    t0 = time.time()
+    resp = c.converse(modelId=args.model, messages=messages,
+                      inferenceConfig={"maxTokens": args.max_tokens})
+    dt = (time.time() - t0) * 1000
+
+    off = resp["offramp"]
+    text = resp["output"]["message"]["content"][0]["text"]
+    usage = resp["usage"]
+    src, alt = target.source.blended(), target.alt.blended()
+    pct = off["saved_per_1m"] / src * 100 if src else 0
+    print(f"route  {args.model} -> {off['routed_to']}   ({tag}, same weights, no quality change)")
+    print(f"  ${src:.2f}/1M -> ${alt:.2f}/1M blended   save ${off['saved_per_1m']:.2f}/1M ({pct:.0f}%)")
+    print(f"  served {usage['totalTokens']} tok in {dt:.0f} ms   (identical model — output unchanged)")
+    print("  --- response ---")
+    for line in textwrap.wrap(text, 86)[:6]:
+        print("  " + line)
+    if not args.live:
+        print("  [mock provider — add --live + a host key for a real routed call]")
+    return 0
+
+
 def cmd_prices(args: argparse.Namespace) -> int:
     print(f"{'model':<20}{'provider':<12}{'in $/M':>9}{'out $/M':>9}{'blend':>8}{'cap':>5}  class")
     for m in sorted(prices.TEXT_ROWS, key=lambda x: (x.family, x.blended())):
@@ -132,6 +170,14 @@ def main(argv: list[str] | None = None) -> int:
     op.add_argument("--prompts", help="prompts JSON for replay (default: bundled sample)")
     op.add_argument("--audit", help="append decisions to this JSONL audit ledger")
     op.set_defaults(func=cmd_optimize)
+
+    ro = sub.add_parser("route", help="serve an open-weight model from a cheaper host (same weights)")
+    ro.add_argument("model", help="open-weight model id, e.g. gpt-oss-120b or llama-3.3-70b")
+    ro.add_argument("prompt", help="the prompt to send")
+    ro.add_argument("--host", default="groq", help="cheaper host to route to (default groq)")
+    ro.add_argument("--live", action="store_true", help="make a real host call (needs host key)")
+    ro.add_argument("--max-tokens", type=int, default=256, help="response cap")
+    ro.set_defaults(func=cmd_route)
 
     pr = sub.add_parser("prices", help="print the price catalog")
     pr.set_defaults(func=cmd_prices)
