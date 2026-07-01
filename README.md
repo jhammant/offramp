@@ -1,5 +1,9 @@
 # offramp
 
+[![tests](https://github.com/jhammant/offramp/actions/workflows/ci.yml/badge.svg)](https://github.com/jhammant/offramp/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](pyproject.toml)
+
 **Analyze your cloud AI spend — AWS Bedrock, Google Vertex, Azure OpenAI — and recommend cheaper providers, before you route a single call.**
 
 Every hyperscaler resells models at the vendor's list price. For **open-weight**
