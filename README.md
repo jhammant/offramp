@@ -60,6 +60,21 @@ The `recommend → replay-eval → govern` engine is identical across all three 
 the usage reader differs. AWS is wired live; Vertex/Azure readers need your creds
 + config (run `--dry-run --cloud gcp|azure` to exercise the engine meanwhile).
 
+## Sovereignty
+
+Cost isn't the only axis — **where your data runs** is another. Every provider is
+tagged with a jurisdiction (US hyperscalers count as US even with EU regions — US
+CLOUD Act), and offramp surfaces the EU-sovereign option alongside the cheapest one:
+
+```bash
+offramp analyze --dry-run --cloud aws                 # picks cheapest, flags the EU option
+offramp analyze --dry-run --cloud aws --sovereign eu  # prefer EU-sovereign hosts
+```
+
+It stays honest both ways: Mistral's EU home host undercuts Bedrock (*cheaper AND
+sovereign*), while EU hosting for Llama is a *premium* ($552 vs $468) — offramp
+flags it but refuses to call it a saving. EU-sovereign hosts: Scaleway, OVH, Mistral.
+
 ## What you get
 
 - **Usage mix** — models, tokens/images, estimated spend, grouped by cloud.

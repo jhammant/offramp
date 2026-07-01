@@ -49,8 +49,10 @@ def render(records: list[UsageRecord], recs: list[Rec], totals: dict,
     if arb:
         for r in arb:
             out.append(f"   {r.model_id}")
-            out.append(f"      {r.detail:<28} {_money(r.current)} -> {_money(r.new)}"
+            out.append(f"      {r.detail:<30} {_money(r.current)} -> {_money(r.new)}"
                        f"   save {_money(r.saving)} ({r.pct:.0f}%)")
+            if r.note and ("sovereign" in r.note.lower() or "EU" in r.note):
+                out.append(f"         ↳ {r.note}")
         out.append(f"   => safe savings this window: {_money(totals['arbitrage_saving'])}")
     else:
         out.append("   (none — no open-weight Bedrock traffic with a cheaper host)")

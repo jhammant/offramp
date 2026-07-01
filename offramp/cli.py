@@ -31,7 +31,8 @@ def _load_usage(args):
 
 def cmd_analyze(args: argparse.Namespace) -> int:
     records, window, source = _load_usage(args)
-    recs, totals = recommend(records, ratio=args.ratio)
+    sov = None if getattr(args, "sovereign", "any") == "any" else args.sovereign
+    recs, totals = recommend(records, ratio=args.ratio, sovereign=sov)
     print(render(records, recs, totals, window, source, args.ratio))
     return 0
 
@@ -88,6 +89,8 @@ def main(argv: list[str] | None = None) -> int:
                        help="use the bundled sample workload")
         parser.add_argument("--cloud", choices=["aws", "gcp", "azure", "all"], default="all",
                             help="which cloud(s) to analyze (default: all)")
+        parser.add_argument("--sovereign", choices=["any", "eu"], default="any",
+                            help="prefer EU-sovereign hosts for arbitrage (data residency)")
         parser.add_argument("--regions", help="comma-separated regions for --live (AWS)")
         parser.add_argument("--days", type=int, default=30, help="lookback window (default 30)")
         parser.add_argument("--ratio", type=float, default=3.0, help="input:output token ratio")

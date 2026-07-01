@@ -75,6 +75,26 @@ def test_open_weight_arbitrage_works_on_every_cloud():
         assert arb and arb[0].new < arb[0].current, f"no arbitrage for {rec.model_id}"
 
 
+def test_sovereign_prefers_eu_host_and_tags_jurisdiction():
+    # Mistral Large on Bedrock has an EU-sovereign host that is also cheaper.
+    rec_list, _ = recommend([
+        UsageRecord("mistral.mistral-large-2407-v1:0", "eu-west-1",
+                    60_000_000, 20_000_000, 45_000, cloud="bedrock"),
+    ], sovereign="eu")
+    arb = [r for r in rec_list if r.kind == "arbitrage"]
+    assert arb and "[EU]" in arb[0].detail and arb[0].new < arb[0].current
+
+
+def test_default_flags_eu_option_but_picks_cheapest():
+    # Llama's cheapest host is US; default still surfaces the EU-sovereign option.
+    rec_list, _ = recommend([
+        UsageRecord("meta.llama3-3-70b-instruct-v1:0", "us-west-2",
+                    500_000_000, 150_000_000, 300_000, cloud="bedrock"),
+    ])
+    arb = [r for r in rec_list if r.kind == "arbitrage"]
+    assert arb and "[US]" in arb[0].detail and "EU-sovereign option" in arb[0].note
+
+
 def test_replay_agreement_tracks_capability_gap():
     # A near-capability swap should agree more than a far one (mock is monotonic).
     from offramp.replay import replay

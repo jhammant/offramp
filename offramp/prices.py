@@ -24,6 +24,19 @@ from dataclasses import dataclass
 CLOUDS = {"bedrock", "vertex", "azure"}
 CLOUD_LABEL = {"bedrock": "AWS", "vertex": "Google", "azure": "Microsoft"}
 
+# Data residency / sovereignty of each provider. Note: US hyperscalers offer EU
+# *regions* but remain US-controlled (US CLOUD Act), so for an EU-sovereignty lens
+# they count as "US". EU-sovereign hosts keep both data and control in the EU.
+PROVIDER_JURISDICTION = {
+    "bedrock": "US", "vertex": "US", "azure": "US",
+    "groq": "US", "together": "US", "deepinfra": "US", "fal": "US", "stability": "US",
+    "scaleway": "EU", "ovh": "EU", "mistral": "EU",
+}
+
+
+def jurisdiction(provider: str) -> str:
+    return PROVIDER_JURISDICTION.get(provider, "?")
+
 
 @dataclass(frozen=True)
 class TextModel:
@@ -77,6 +90,12 @@ _TEXT = [
     TextModel("gpt-oss-120b",      "groq",      0.15, 0.60, 84, "open", "gpt-oss-120b"),
     TextModel("deepseek-v3.1",     "deepinfra", 0.27, 1.10, 85, "open", "deepseek-v3.1"),
     TextModel("deepseek-v3.1",     "together",  0.60, 1.70, 85, "open", "deepseek-v3.1"),
+    # === EU-sovereign hosts (same open weights, data + control stay in EU) — approx ===
+    TextModel("llama-3.3-70b",     "scaleway",  0.85, 0.85, 74, "open", "llama-3.3-70b"),
+    TextModel("llama-3.3-70b",     "ovh",       0.90, 0.90, 74, "open", "llama-3.3-70b"),
+    TextModel("mistral-large-2",   "mistral",   2.0,  6.0,  78, "open", "mistral-large-2"),
+    TextModel("mistral-small",     "mistral",   0.20, 0.60, 66, "open", "mistral-small"),
+    TextModel("gpt-oss-120b",      "scaleway",  0.25, 0.90, 84, "open", "gpt-oss-120b"),
 ]
 TEXT_ROWS = _TEXT
 
@@ -88,14 +107,17 @@ for _m in _TEXT:
         SOURCE[_m.id] = _m
 
 
-def alternatives(canonical_id: str) -> list[TextModel]:
-    """Same weights on a cheaper HOST (not another hyperscaler), cheapest first."""
+def alternatives(canonical_id: str, jurisdiction: str | None = None) -> list[TextModel]:
+    """Same weights on a cheaper HOST (not another hyperscaler), cheapest first.
+    Optionally restrict to a data-residency jurisdiction (e.g. 'EU')."""
     alts = [m for m in _TEXT if m.id == canonical_id and m.provider not in CLOUDS]
+    if jurisdiction:
+        alts = [m for m in alts if PROVIDER_JURISDICTION.get(m.provider) == jurisdiction]
     return sorted(alts, key=lambda m: m.blended())
 
 
-def cheapest_alt(canonical_id: str) -> TextModel | None:
-    alts = alternatives(canonical_id)
+def cheapest_alt(canonical_id: str, jurisdiction: str | None = None) -> TextModel | None:
+    alts = alternatives(canonical_id, jurisdiction)
     return alts[0] if alts else None
 
 

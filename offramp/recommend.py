@@ -39,7 +39,8 @@ def _confidence(cap_from: int, cap_to: int) -> str:
     return "low"
 
 
-def recommend(records: list[UsageRecord], ratio: float = 3.0) -> tuple[list[Rec], dict]:
+def recommend(records: list[UsageRecord], ratio: float = 3.0,
+              sovereign: str | None = None) -> tuple[list[Rec], dict]:
     recs: list[Rec] = []
     total_spend = 0.0
     arbitrage_saving = 0.0
@@ -79,15 +80,25 @@ def recommend(records: list[UsageRecord], ratio: float = 3.0) -> tuple[list[Rec]
 
         # --- arbitrage: same weights, cheaper host --------------------------
         if m.weight_class == "open":
-            alt = prices.cheapest_alt(m.id)
+            pref = "EU" if sovereign == "eu" else None
+            alt = prices.cheapest_alt(m.id, pref) or prices.cheapest_alt(m.id)
             if alt and _text_cost(alt, r.input_tokens, r.output_tokens) < current:
                 new = _text_cost(alt, r.input_tokens, r.output_tokens)
                 saving = current - new
                 arbitrage_saving += saving
+                jur = prices.jurisdiction(alt.provider)
+                note = "identical model — no quality change"
+                if sovereign == "eu":
+                    note = f"EU-sovereign — data + control stay in {jur}"
+                else:
+                    eu = prices.cheapest_alt(m.id, "EU")
+                    if eu and eu.provider != alt.provider:
+                        eu_cost = _text_cost(eu, r.input_tokens, r.output_tokens)
+                        note += f"; EU-sovereign option: {eu.provider} (${eu_cost:,.0f})"
                 recs.append(Rec("arbitrage", r.model_id,
-                                f"same weights on {alt.provider}",
+                                f"same weights on {alt.provider} [{jur}]",
                                 current, new, saving, saving / current * 100,
-                                "high", "identical model — no quality change"))
+                                "high", note))
 
         # --- substitution: cheaper model, quality bet -----------------------
         for cand_id in prices.LADDER.get(m.id, []):
