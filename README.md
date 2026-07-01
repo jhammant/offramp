@@ -1,29 +1,34 @@
 # offramp
 
-**Analyze your AWS Bedrock spend and recommend cheaper providers — before you route a single call.**
+**Analyze your cloud AI spend — AWS Bedrock, Google Vertex, Azure OpenAI — and recommend cheaper providers, before you route a single call.**
 
-Bedrock resells models at the vendor's list price. For **open-weight** models
-(Llama, Mistral, gpt-oss) the *same weights* run cheaper elsewhere; for
-**proprietary** models (Claude, Nova) the only lever is substituting a cheaper
-model — a quality bet. `offramp` reads your real usage, prices it, and ranks the
-savings, separating the **safe** (identical-weights) wins from the **advisory**
-(quality-bet) ones. Routing comes later, only for what you approve.
+Every hyperscaler resells models at the vendor's list price. For **open-weight**
+models (Llama, Mistral, gpt-oss) the *same weights* run cheaper on a dedicated
+host; for **proprietary** frontier models (Claude, Nova, **Gemini**, **GPT**) there
+is no cheaper twin — the only lever is substituting a cheaper model, a quality
+bet. `offramp` treats all three clouds evenhandedly: it reads your real usage,
+prices it, and ranks the savings, separating the **safe** (identical-weights) wins
+from the **advisory** (quality-bet) ones. Routing comes later, only for what you approve.
 
-> Analyze → recommend → (Phase 2) route. Phase 1 is 100% read-only.
+> Same truth on every cloud: open weights = a free lunch; frontier = a quality bet.
+> Analyze → replay-eval → govern. Analysis is 100% read-only.
 
 ## Install
 
 ```bash
 pip install -e .          # analyzer + recommender (no deps)
-pip install -e '.[live]'  # add boto3 for live CloudWatch reads
+pip install -e '.[live]'  # add boto3 for live AWS reads
+#   Vertex live (experimental): pip install google-cloud-monitoring
+#   Azure  live (experimental): pip install azure-monitor-query azure-identity
 ```
 
 ## Use
 
 ```bash
-# 1. ANALYZE — what could you save? (sample workload, no AWS needed)
-offramp analyze --dry-run
-offramp analyze --live --regions us-east-1,us-west-2   # real account, read-only
+# 1. ANALYZE — what could you save? (sample workload spanning all 3 clouds)
+offramp analyze --dry-run                 # all clouds, even-handed
+offramp analyze --dry-run --cloud gcp     # or focus one: aws | gcp | azure
+offramp analyze --live --cloud aws --regions us-east-1,us-west-2   # read-only
 
 # 2. REPLAY-EVAL — prove a substitution on your prompts before trusting it
 offramp replay claude-opus-4.6 deepseek-v3.1           # offline mock by default
@@ -36,12 +41,24 @@ offramp optimize --live --auto-substitutions --deny claude   # e.g. never touch 
 offramp prices                                         # the price catalog
 ```
 
-`--live` reads only the `AWS/Bedrock` CloudWatch namespace (token counts +
-invocations per model). No inference, no writes, no cost.
+`--live --cloud aws` reads only the `AWS/Bedrock` CloudWatch namespace (token
+counts + invocations per model). No inference, no writes, no cost.
+
+## Clouds
+
+| Cloud | Analyze (live) | Open-weight arbitrage | Frontier (substitution-only) |
+|---|---|---|---|
+| **AWS Bedrock** | ✅ CloudWatch | Llama, Mistral, gpt-oss | Claude, Nova |
+| **Google Vertex** | ⚗️ experimental (Cloud Monitoring) | Llama (Model Garden) | Gemini |
+| **Azure OpenAI** | ⚗️ experimental (Azure Monitor) | gpt-oss | GPT-5.x, GPT-4o |
+
+The `recommend → replay-eval → govern` engine is identical across all three — only
+the usage reader differs. AWS is wired live; Vertex/Azure readers need your creds
++ config (run `--dry-run --cloud gcp|azure` to exercise the engine meanwhile).
 
 ## What you get
 
-- **Usage mix** — models, tokens/images, estimated Bedrock spend.
+- **Usage mix** — models, tokens/images, estimated spend, grouped by cloud.
 - **SAFE recs** — same weights on a cheaper host (text *and* Stability image models).
   Auto-routable, no quality change.
 - **ADVISORY recs** — cheaper model with a capability-delta flag. *Quality bets.*
@@ -55,9 +72,10 @@ invocations per model). No inference, no writes, no cost.
 
 ## Honesty notes
 
-- **Claude/GPT have no cheaper twin.** OpenRouter passes through the vendor price
-  (+~5.5% fee), so "move Claude off Bedrock to OpenRouter" saves nothing. The only
-  real Claude savings are substitution, caching, batch, or region-pinning.
+- **Frontier models (Claude / Gemini / GPT) have no cheaper twin.** They live on
+  one vendor; OpenRouter just passes the list price through (+~5.5% fee). So the
+  only savings on them are substitution, caching, batch, or region-pinning — never
+  "same model, cheaper host." offramp says this the same way for every cloud.
 - `capability` scores are **priors from public benchmarks**, not guarantees. The
   whole point of replay-eval (Phase 2) is to replace them with measured numbers.
 - The router (`offramp/router/`) is scaffolded but `shadow`/`route` are guarded so
@@ -65,6 +83,8 @@ invocations per model). No inference, no writes, no cost.
 
 ## Status
 
+- **Multi-cloud:** AWS/Google/Azure in the price model + recommender + sample.
+  AWS live reader wired; Vertex/Azure live readers experimental (need creds).
 - **Phase 1 — analyze + recommend:** working (text + image, live + sample).
 - **Phase 2 — replay-eval + router:** replay-eval works offline (mock provider);
   the Converse↔OpenAI translator + OpenAI-compatible adapters are wired but live

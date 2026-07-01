@@ -19,13 +19,14 @@ PROMPTS = os.path.join(_HERE, "..", "sample", "replay_prompts.json")
 
 
 def _load_usage(args):
+    cloud = getattr(args, "cloud", "all")
     if args.live:
         regions = args.regions.split(",") if args.regions else None
-        records, window = load_live(regions=regions, days=args.days)
-        return records, window, "live: CloudWatch"
+        records, window = load_live(cloud=cloud, regions=regions, days=args.days)
+        return records, window, f"live: {cloud}"
     path = args.sample or SAMPLE
-    records, window = load_sample(path)
-    return records, window, f"sample: {os.path.basename(path)}"
+    records, window = load_sample(path, cloud=cloud)
+    return records, window, f"sample ({cloud})"
 
 
 def cmd_analyze(args: argparse.Namespace) -> int:
@@ -81,11 +82,13 @@ def main(argv: list[str] | None = None) -> int:
 
     def add_usage_flags(parser):
         g = parser.add_mutually_exclusive_group()
-        g.add_argument("--live", action="store_true", help="read real usage from CloudWatch (read-only)")
+        g.add_argument("--live", action="store_true", help="read real usage from the cloud (read-only)")
         g.add_argument("--sample", metavar="PATH", help="use a sample usage JSON file")
         g.add_argument("--dry-run", dest="sample", action="store_const", const=SAMPLE,
                        help="use the bundled sample workload")
-        parser.add_argument("--regions", help="comma-separated regions for --live")
+        parser.add_argument("--cloud", choices=["aws", "gcp", "azure", "all"], default="all",
+                            help="which cloud(s) to analyze (default: all)")
+        parser.add_argument("--regions", help="comma-separated regions for --live (AWS)")
         parser.add_argument("--days", type=int, default=30, help="lookback window (default 30)")
         parser.add_argument("--ratio", type=float, default=3.0, help="input:output token ratio")
 

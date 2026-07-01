@@ -47,6 +47,34 @@ def test_image_proprietary_has_no_arbitrage():
     assert img and img[0].saving == 0.0
 
 
+def test_gemini_is_substitution_only():
+    # Gemini is Google-only -> no same-weight arbitrage, only substitution.
+    rec_list, _ = recommend([
+        UsageRecord("gemini-2.5-pro", "us-central1", 200_000_000, 60_000_000, 180_000, cloud="vertex"),
+    ])
+    assert not [r for r in rec_list if r.kind == "arbitrage"], "Gemini has no cheaper twin"
+    assert [r for r in rec_list if r.kind == "substitution"], "expected substitution options"
+
+
+def test_gpt_on_azure_is_substitution_only():
+    rec_list, _ = recommend([
+        UsageRecord("gpt-4o", "eastus", 250_000_000, 80_000_000, 300_000, cloud="azure"),
+    ])
+    assert not [r for r in rec_list if r.kind == "arbitrage"], "GPT list price is the same everywhere"
+    assert [r for r in rec_list if r.kind == "substitution"]
+
+
+def test_open_weight_arbitrage_works_on_every_cloud():
+    # Llama on Vertex and gpt-oss on Azure should each get same-weights arbitrage.
+    for rec in [UsageRecord("publishers/meta/models/llama-3.3-70b", "us-central1",
+                            150_000_000, 50_000_000, 90_000, cloud="vertex"),
+                UsageRecord("gpt-oss-120b", "eastus",
+                            300_000_000, 90_000_000, 200_000, cloud="azure")]:
+        rec_list, _ = recommend([rec])
+        arb = [r for r in rec_list if r.kind == "arbitrage"]
+        assert arb and arb[0].new < arb[0].current, f"no arbitrage for {rec.model_id}"
+
+
 def test_replay_agreement_tracks_capability_gap():
     # A near-capability swap should agree more than a far one (mock is monotonic).
     from offramp.replay import replay

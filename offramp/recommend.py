@@ -69,7 +69,7 @@ def recommend(records: list[UsageRecord], ratio: float = 3.0) -> tuple[list[Rec]
                                 0.0, 0.0, "n/a", why))
             continue
 
-        m = prices.find_text_model(r.model_id)
+        m = prices.find_text_model(r.model_id, r.cloud)
         if not m:
             unmatched.append(r.model_id)
             continue
@@ -79,7 +79,7 @@ def recommend(records: list[UsageRecord], ratio: float = 3.0) -> tuple[list[Rec]
 
         # --- arbitrage: same weights, cheaper host --------------------------
         if m.weight_class == "open":
-            alt = prices.cheapest_alt(m.family)
+            alt = prices.cheapest_alt(m.id)
             if alt and _text_cost(alt, r.input_tokens, r.output_tokens) < current:
                 new = _text_cost(alt, r.input_tokens, r.output_tokens)
                 saving = current - new

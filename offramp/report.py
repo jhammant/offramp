@@ -1,6 +1,7 @@
 """Render the analysis as a plain-text CLI report."""
 from __future__ import annotations
 
+from . import prices
 from .recommend import Rec
 from .usage import UsageRecord
 
@@ -16,7 +17,7 @@ def render(records: list[UsageRecord], recs: list[Rec], totals: dict,
            window_days: int, source: str, ratio: float) -> str:
     out: list[str] = []
     out.append(BAR)
-    out.append(f"  offramp — Bedrock spend analysis   ({source}, {window_days}d, {ratio:.0f}:1 in:out)")
+    out.append(f"  offramp — cloud AI spend analysis   ({source}, {window_days}d, {ratio:.0f}:1 in:out)")
     out.append(BAR)
 
     if not records:
@@ -24,16 +25,20 @@ def render(records: list[UsageRecord], recs: list[Rec], totals: dict,
         out.append(BAR)
         return "\n".join(out)
 
-    # Model mix
+    # Model mix, grouped by cloud (even-handed across AWS / Google / Microsoft)
     out.append("  USAGE")
-    for r in sorted(records, key=lambda x: x.model_id):
-        if r.kind == "image":
-            out.append(f"   {r.model_id:<38} {r.calls:>10,} images  [{r.region}]")
-        else:
-            toks = (r.input_tokens + r.output_tokens) / 1e6
-            out.append(f"   {r.model_id:<38} {toks:>9,.1f}M tok  [{r.region}]")
+    clouds = sorted({r.cloud for r in records}, key=lambda c: prices.CLOUD_LABEL.get(c, c))
+    for cloud in clouds:
+        out.append(f"   {prices.CLOUD_LABEL.get(cloud, cloud)}:")
+        for r in sorted([x for x in records if x.cloud == cloud], key=lambda x: x.model_id):
+            if r.kind == "image":
+                out.append(f"     {r.model_id:<36} {r.calls:>10,} images  [{r.region}]")
+            else:
+                toks = (r.input_tokens + r.output_tokens) / 1e6
+                out.append(f"     {r.model_id:<36} {toks:>9,.1f}M tok  [{r.region}]")
     out.append("")
-    out.append(f"   Estimated Bedrock spend: {_money(totals['total_spend'])} / {window_days}d")
+    out.append(f"   Estimated cloud AI spend: {_money(totals['total_spend'])} / {window_days}d"
+               f"   ({len(clouds)} cloud{'s' if len(clouds) != 1 else ''})")
     out.append(DASH)
 
     arb = [r for r in recs if r.kind == "arbitrage"]
