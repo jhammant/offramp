@@ -42,23 +42,27 @@ const IMG = {
   analyze: { src: "analyze.png", w: 1160, h: 1260 },
   replay: { src: "replay.png", w: 1039, h: 202 },
   optimize: { src: "optimize.png", w: 1212, h: 944 },
+  route: { src: "route.png", w: 1187, h: 260 },
 };
 
 // ---- timing --------------------------------------------------------------
 const T = {
   intro: 75,
-  beat: 225,
-  beatShort: 195,
+  analyze: 225,
+  replay: 195,
+  govern: 225,
+  route: 195,
   outro: 120,
 };
 const START = {
   intro: 0,
   b1: 75,
-  b2: 75 + T.beat, // 300
-  b3: 75 + T.beat + T.beatShort, // 495
-  outro: 75 + T.beat + T.beatShort + T.beat, // 720
+  b2: 75 + T.analyze, // 300
+  b3: 75 + T.analyze + T.replay, // 495
+  b4: 75 + T.analyze + T.replay + T.govern, // 720
+  outro: 75 + T.analyze + T.replay + T.govern + T.route, // 915
 };
-export const DEMO_DURATION = START.outro + T.outro; // 840 (28s)
+export const DEMO_DURATION = START.outro + T.outro; // 1035 (34.5s)
 
 // ---- background ----------------------------------------------------------
 const Background: React.FC = () => (
@@ -418,7 +422,7 @@ const StepDots: React.FC<{ active: number }> = ({ active }) => (
       gap: 14,
     }}
   >
-    {[0, 1, 2].map((i) => (
+    {[0, 1, 2, 3].map((i) => (
       <div
         key={i}
         style={{
@@ -443,7 +447,7 @@ export const OfframpDemo: React.FC = () => {
         <Intro />
       </Sequence>
 
-      <Sequence from={START.b1} durationInFrames={T.beat}>
+      <Sequence from={START.b1} durationInFrames={T.analyze}>
         <Beat
           num="01"
           title="Analyze"
@@ -460,7 +464,7 @@ export const OfframpDemo: React.FC = () => {
         <StepDots active={0} />
       </Sequence>
 
-      <Sequence from={START.b2} durationInFrames={T.beatShort}>
+      <Sequence from={START.b2} durationInFrames={T.replay}>
         <Beat
           num="02"
           title="Replay-eval"
@@ -477,7 +481,7 @@ export const OfframpDemo: React.FC = () => {
         <StepDots active={1} />
       </Sequence>
 
-      <Sequence from={START.b3} durationInFrames={T.beat}>
+      <Sequence from={START.b3} durationInFrames={T.govern}>
         <Beat
           num="03"
           title="Govern"
@@ -492,6 +496,23 @@ export const OfframpDemo: React.FC = () => {
           ]}
         />
         <StepDots active={2} />
+      </Sequence>
+
+      <Sequence from={START.b4} durationInFrames={T.route}>
+        <Beat
+          num="04"
+          title="Route"
+          subtitle="The migration — served from the cheaper host, live."
+          accent={C.mauve}
+          cmd="offramp route gpt-oss-120b --live"
+          img={IMG.route}
+          callouts={[
+            { text: "Served from Groq — same weights, not a different model", color: C.mauve, yFrac: 0.24 },
+            { text: "50% cheaper · $0.52 → $0.26 / 1M", color: C.green, yFrac: 0.46 },
+            { text: "A real answer, sub-second — proprietary models stay on Bedrock", color: C.blue, yFrac: 0.74 },
+          ]}
+        />
+        <StepDots active={3} />
       </Sequence>
 
       <Sequence from={START.outro} durationInFrames={T.outro}>
