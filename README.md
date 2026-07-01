@@ -24,7 +24,7 @@ from the **advisory** (quality-bet) ones. Routing comes later, only for what you
 ## Demo
 
 <p align="center">
-  <img src="demo/offramp.gif" alt="offramp demo: analyze across AWS/Google/Azure, then a real live replay-eval on Groq (LLM-as-judge), then a governed optimize plan" width="900">
+  <img src="demo/offramp.gif" alt="offramp demo: read-only analyze, then a real live replay-eval on Groq (LLM-as-judge), then a governed optimize plan" width="820">
 </p>
 
 One pass, three steps: `analyze` prices your usage across all three clouds → `replay-eval` proves a swap on your own prompts (**live on Groq, LLM-as-judge — not a mock**) → `optimize` produces a governed plan that **auto-applies the safe wins** and **stages the quality bets behind your sign-off**. The router never reroutes a call until you approve it.

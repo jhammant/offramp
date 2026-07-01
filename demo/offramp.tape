@@ -1,19 +1,23 @@
 # offramp launch demo — analyze -> real live replay-eval (Groq) -> governed optimize
 # Record with:  vhs demo/offramp.tape   (produces demo/offramp.gif)
-# The live replay makes REAL Groq API calls; the key is sourced from ~/dev/.env
-# inside a Hide block, so its value never appears on screen.
+# Focused on AWS so every screen FITS the viewport; a hidden `clear` resets between
+# beats. The live replay makes REAL Groq calls of VARIABLE latency, so instead of a
+# fixed Sleep we Wait for the "VERDICT" line to actually appear before moving on —
+# that keeps the tape in sync no matter how long the API round-trip takes.
+# The key is sourced from ~/dev/.env inside a Hide block, so it never appears.
 
 Output demo/offramp.gif
 
 Set Shell bash
-Set FontSize 15
-Set Width 1240
-Set Height 820
-Set Padding 28
+Set FontSize 16
+Set Width 1200
+Set Height 1100
+Set Padding 24
 Set Theme "Catppuccin Mocha"
-Set TypingSpeed 30ms
+Set TypingSpeed 22ms
+Set WaitTimeout 45s
 
-# --- hidden setup: cwd, key, a clean `offramp` alias, a minimal prompt ---
+# --- hidden setup: cwd, key, a clean `offramp` command, a minimal prompt ---
 Hide
 Type `cd ~/dev/offramp`
 Enter
@@ -26,24 +30,38 @@ Enter
 Type `clear`
 Enter
 Show
-Sleep 800ms
-
-# 1) ANALYZE — one read-only pass across AWS + Google + Azure
-Type "offramp analyze --dry-run"
-Sleep 400ms
-Enter
-Sleep 4s
-
-# 2) REPLAY-EVAL — prove a swap on real prompts, live on Groq, LLM-as-judge
-Type "offramp replay llama-3.3-70b gpt-oss-120b --live --limit 4"
-Sleep 400ms
-Enter
-Sleep 11s
-
-# 3) OPTIMIZE — governed plan: APPLY the safe wins, STAGE the bets, HOLD the fails
-Type "offramp optimize --dry-run"
-Sleep 400ms
-Enter
-Sleep 5s
-
 Sleep 1500ms
+
+# 1) ANALYZE — read-only: total spend, the SAFE lane, the ADVISORY lane
+Type "offramp analyze --dry-run --cloud aws"
+Sleep 700ms
+Enter
+Sleep 8s
+
+Hide
+Type `clear`
+Enter
+Show
+Sleep 500ms
+
+# 2) REPLAY-EVAL — prove a swap live on Groq (real API round-trip, variable latency).
+#    n=8 so the verdict is stable (one hard prompt can't swing a 4-prompt sample).
+Type "offramp replay llama-3.3-70b gpt-oss-120b --live --limit 8"
+Sleep 700ms
+Enter
+Wait+Screen@45s /VERDICT/
+Sleep 7s
+
+Hide
+Type `clear`
+Enter
+Show
+Sleep 500ms
+
+# 3) OPTIMIZE — governed plan: APPLY the safe wins, STAGE the eval-passed, HOLD the rest
+Type "offramp optimize --dry-run --cloud aws"
+Sleep 700ms
+Enter
+Sleep 10s
+
+Sleep 2500ms
