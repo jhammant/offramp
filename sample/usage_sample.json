@@ -1,0 +1,11 @@
+{
+  "window_days": 30,
+  "note": "Synthetic but realistic monthly Bedrock text workload for demoing offramp.",
+  "records": [
+    {"model_id": "anthropic.claude-opus-4-6-v1:0",   "region": "us-east-1", "input_tokens": 120000000, "output_tokens": 40000000,  "calls": 210000, "kind": "text"},
+    {"model_id": "anthropic.claude-sonnet-5-v1:0",   "region": "us-east-1", "input_tokens": 300000000, "output_tokens": 90000000,  "calls": 540000, "kind": "text"},
+    {"model_id": "meta.llama3-3-70b-instruct-v1:0",  "region": "us-west-2", "input_tokens": 500000000, "output_tokens": 150000000, "calls": 300000, "kind": "text"},
+    {"model_id": "mistral.mistral-large-2407-v1:0",  "region": "us-east-1", "input_tokens": 60000000,  "output_tokens": 20000000,  "calls": 45000,  "kind": "text"},
+    {"model_id": "amazon.nova-pro-v1:0",             "region": "us-east-1", "input_tokens": 80000000,  "output_tokens": 30000000,  "calls": 90000,  "kind": "text"}
+  ]
+}

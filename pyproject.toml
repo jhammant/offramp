@@ -1,0 +1,20 @@
+[project]
+name = "offramp"
+version = "0.1.0"
+description = "Analyze your AWS Bedrock spend and recommend cheaper providers — before you route a single call."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Jon Hammant" }]
+keywords = ["bedrock", "llm", "finops", "cost", "aws"]
+dependencies = []
+
+[project.optional-dependencies]
+live = ["boto3>=1.28"]
+
+[project.scripts]
+offramp = "offramp.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"

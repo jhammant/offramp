@@ -1,0 +1,122 @@
+"""offramp CLI — `offramp analyze` (read-only) and `offramp prices`."""
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+
+from . import __version__, prices
+from .optimize import optimize, render_plan
+from .policy import Policy
+from .recommend import recommend
+from .replay import load_prompts, replay
+from .report import render
+from .usage import load_live, load_sample
+
+_HERE = os.path.dirname(__file__)
+SAMPLE = os.path.join(_HERE, "..", "sample", "usage_sample.json")
+PROMPTS = os.path.join(_HERE, "..", "sample", "replay_prompts.json")
+
+
+def _load_usage(args):
+    if args.live:
+        regions = args.regions.split(",") if args.regions else None
+        records, window = load_live(regions=regions, days=args.days)
+        return records, window, "live: CloudWatch"
+    path = args.sample or SAMPLE
+    records, window = load_sample(path)
+    return records, window, f"sample: {os.path.basename(path)}"
+
+
+def cmd_analyze(args: argparse.Namespace) -> int:
+    records, window, source = _load_usage(args)
+    recs, totals = recommend(records, ratio=args.ratio)
+    print(render(records, recs, totals, window, source, args.ratio))
+    return 0
+
+
+def cmd_replay(args: argparse.Namespace) -> int:
+    prompts = load_prompts(args.prompts or PROMPTS)
+    res = replay(prompts, args.reference, args.candidate, threshold=args.threshold)
+    live = os.environ.get("OFFRAMP_LIVE_ROUTING") == "1"
+    print(f"replay-eval  {res.reference} -> {res.candidate}   ({'LIVE' if live else 'MOCK'}, n={res.n})")
+    print(f"  agreement={res.agreement}  pass_rate={res.pass_rate} (>= {res.threshold})")
+    print(f"  projected saving: ${res.projected_saving_per_1m:.2f}/1M blended")
+    print(f"  VERDICT: {res.verdict.upper()}")
+    if res.misses:
+        print(f"  {len(res.misses)} below threshold, e.g.: {res.misses[0]['prompt']!r} (score {res.misses[0]['score']})")
+    if not live:
+        print("  [mock provider — set OFFRAMP_LIVE_ROUTING=1 + host key for a real eval]")
+    return 0
+
+
+def cmd_optimize(args: argparse.Namespace) -> int:
+    records, window, source = _load_usage(args)
+    policy = Policy(
+        auto_apply_substitution=args.auto_substitutions,
+        min_saving=args.min_saving,
+        deny_models=args.deny.split(",") if args.deny else [],
+    )
+    prompts = None if args.no_replay else load_prompts(args.prompts or PROMPTS)
+    decisions, plan, totals = optimize(records, policy, ratio=args.ratio,
+                                       prompts=prompts, audit_path=args.audit)
+    print(render_plan(decisions, plan, totals))
+    if args.audit:
+        print(f"  audit ledger appended: {args.audit}")
+    return 0
+
+
+def cmd_prices(args: argparse.Namespace) -> int:
+    print(f"{'model':<20}{'provider':<12}{'in $/M':>9}{'out $/M':>9}{'blend':>8}{'cap':>5}  class")
+    for m in sorted(prices.TEXT_ROWS, key=lambda x: (x.family, x.blended())):
+        print(f"{m.id:<20}{m.provider:<12}{m.input:>9.2f}{m.output:>9.2f}"
+              f"{m.blended():>8.2f}{m.capability:>5}  {m.weight_class}")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(prog="offramp", description="Analyze Bedrock spend; recommend cheaper providers.")
+    p.add_argument("--version", action="version", version=f"offramp {__version__}")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    def add_usage_flags(parser):
+        g = parser.add_mutually_exclusive_group()
+        g.add_argument("--live", action="store_true", help="read real usage from CloudWatch (read-only)")
+        g.add_argument("--sample", metavar="PATH", help="use a sample usage JSON file")
+        g.add_argument("--dry-run", dest="sample", action="store_const", const=SAMPLE,
+                       help="use the bundled sample workload")
+        parser.add_argument("--regions", help="comma-separated regions for --live")
+        parser.add_argument("--days", type=int, default=30, help="lookback window (default 30)")
+        parser.add_argument("--ratio", type=float, default=3.0, help="input:output token ratio")
+
+    a = sub.add_parser("analyze", help="analyze usage and print savings recommendations")
+    add_usage_flags(a)
+    a.set_defaults(func=cmd_analyze)
+
+    rp = sub.add_parser("replay", help="replay-eval a substitution on sample prompts")
+    rp.add_argument("reference", help="reference model id, e.g. claude-opus-4.6")
+    rp.add_argument("candidate", help="cheaper candidate id, e.g. deepseek-v3.1")
+    rp.add_argument("--prompts", help="prompts JSON (default: bundled sample)")
+    rp.add_argument("--threshold", type=float, default=0.8, help="per-prompt pass bar (0..1)")
+    rp.set_defaults(func=cmd_replay)
+
+    op = sub.add_parser("optimize", help="governed action plan (recommend + replay + policy)")
+    add_usage_flags(op)
+    op.add_argument("--auto-substitutions", action="store_true",
+                    help="allow auto-applying substitutions that pass replay-eval")
+    op.add_argument("--min-saving", type=float, default=1.0, help="ignore recs below $ (per window)")
+    op.add_argument("--deny", help="comma-separated model substrings to never touch")
+    op.add_argument("--no-replay", action="store_true", help="skip replay-eval (substitutions -> hold)")
+    op.add_argument("--prompts", help="prompts JSON for replay (default: bundled sample)")
+    op.add_argument("--audit", help="append decisions to this JSONL audit ledger")
+    op.set_defaults(func=cmd_optimize)
+
+    pr = sub.add_parser("prices", help="print the price catalog")
+    pr.set_defaults(func=cmd_prices)
+
+    args = p.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

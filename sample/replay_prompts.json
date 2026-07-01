@@ -1,0 +1,15 @@
+{
+  "note": "Small sample of representative prompts for replay-eval demos (offline mock).",
+  "prompts": [
+    "Summarize the following support ticket in one sentence and classify its urgency.",
+    "Extract the invoice number, total amount, and due date from this email.",
+    "Rewrite this paragraph to be more concise while keeping the technical meaning.",
+    "Given these logs, identify the most likely root cause of the timeout.",
+    "Classify this customer message as billing, technical, or account.",
+    "Draft a two-line reply confirming the meeting and proposing a time.",
+    "Translate this product description into plain English for a general audience.",
+    "List the action items from this meeting transcript as bullet points.",
+    "Decide whether this pull request description matches the code diff summary.",
+    "Turn this bug report into a short reproducible test-case outline."
+  ]
+}
